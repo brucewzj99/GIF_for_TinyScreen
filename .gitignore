@@ -1,0 +1,6 @@
+/venv
+.env
+venv
+images.zip
+frame_*
+images.gif
