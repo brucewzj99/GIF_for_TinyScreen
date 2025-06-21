@@ -1,17 +1,43 @@
 import os
-from PIL import Image
+from PIL import Image, ImageSequence
+import sys
+
+def resize_gif_and_save_frames(gif_path, output_folder, width=96, height=64):
+    """Resize a GIF and save each frame as a centered, cropped PNG in output_folder, filling the area."""
+    frame_count = 0
+    os.makedirs(output_folder, exist_ok=True)
+    with Image.open(gif_path) as im:
+        for i, frame in enumerate(ImageSequence.Iterator(im)):
+            frame = frame.convert("RGBA")
+            # Calculate scale to cover
+            ratio = max(width / frame.width, height / frame.height)
+            new_size = (int(frame.width * ratio), int(frame.height * ratio))
+            resized = frame.resize(new_size, Image.LANCZOS)
+            # Calculate crop box to center
+            left = (resized.width - width) // 2
+            top = (resized.height - height) // 2
+            right = left + width
+            bottom = top + height
+            cropped = resized.crop((left, top, right, bottom))
+            cropped.save(os.path.join(output_folder, f"frame_{i:02d}.png"))
+            frame_count += 1
+    print(f"🖼️  {frame_count} frames generated in '{INPUT_FOLDER}'")
 
 def convert_rgb_to_rgb332(r, g, b):
-    return ((r & 0xE0) | ((g >> 3) & 0x1C) | (b >> 6))
+    # Round to nearest available value in each channel
+    r = int(round(r / 255 * 7)) << 5  # 3 bits
+    g = int(round(g / 255 * 7)) << 2  # 3 bits
+    b = int(round(b / 255 * 3))       # 2 bits
+    return r | g | b
 
 def generate_header(image_path, output_dir):
     filename = os.path.splitext(os.path.basename(image_path))[0]
-    filename = filename.replace("_delay-0.1s", "")
     array_name = f"{filename}"
     header_filename = os.path.join(output_dir, f"{filename}.h")
 
     # Open and convert image
     img = Image.open(image_path).convert("RGB")
+    
     width, height = img.size
     pixels = list(img.getdata())
 
@@ -29,8 +55,6 @@ def generate_header(image_path, output_dir):
             f.write(f"0x{byte:02X}, ")
         f.write("\n};\n")
 
-    print(f"✅ Generated: {header_filename}")
-
 def convert_all_images(input_dir, output_dir):
     os.makedirs(output_dir, exist_ok=True)
     for file in os.listdir(input_dir):
@@ -39,7 +63,16 @@ def convert_all_images(input_dir, output_dir):
             generate_header(convert_header_path, output_dir)
 
 if __name__ == "__main__":
-    INPUT_FOLDER = "./images"      # Put PNGs here
+    if len(sys.argv) < 2:
+        print("Usage: python png_to_rgb332_header.py <your.gif>")
+        sys.exit(1)
+
+    gif_filename = sys.argv[1]
+
+    INPUT_FOLDER = "./image_frames"      # Put PNGs here
     OUTPUT_FOLDER = "./main"   # .h files will be saved here
 
+    resize_gif_and_save_frames(gif_filename, INPUT_FOLDER)  # Resize GIF and save frames
+
     convert_all_images(INPUT_FOLDER, OUTPUT_FOLDER)
+    print(f"✅ Header files output to '{OUTPUT_FOLDER}'")

@@ -6,49 +6,35 @@ Animate a GIF on your TinyScreen+ by converting it into frame-by-frame `.h` file
 
 ### 🚀 How It Works
 
-1. **Find or create a GIF**
+1. **Find or create a GIF**  
    Use any short looping animation (ideally 1–3 seconds). Ensure it looks good at low resolutions.
 
-2. **Resize & convert GIF to frames**
-   Use this free tool to convert your GIF into individual 96x64 PNG frames:
-   👉 [ezgif.com/split](https://ezgif.com/split)
-
-   * Upload your GIF
-   * Resize it to:
-
-     * Width: `96`
-     * Height: `64`
-     * Resize method: `gifsicle`
-   * After resizing, click on the **Split** option
-   * Split options:
-
-     * Output images in **PNG** format
-   * Download the frames as a **zip** file and extract as `images/`
-
-3. **Run the Python script to generate `.h` files**
-   Place the PNGs in a folder (e.g., `images/`) and run the conversion script:
+2. **Run the Python script to generate `.h` files**  
+   Just run the script with your GIF as input:
 
    ```bash
-   pip install pillow # Install Pillow if not already installed
-   python png_to_rgb332_header
+   pip install pillow  # Install dependencies if not already installed
+   python png_to_rgb332_header.py your.gif
    ```
 
-   This generates one `.h` file per frame using RGB332 format for optimal performance.
+   This will:
+   - Automatically extract and resize frames to 96x64 (center-cropped to fill, no borders)
+   - Convert each frame to RGB332 format with dithering for better color quality
+   - Generate one `.h` file per frame in the `/main` folder
 
-4. **Include `.h` files in Arduino**
+3. **Include `.h` files in Arduino**  
    In your Arduino sketch:
-
-   * Include all the generated `.h` files
-   * Add them to an array
-   * Loop through them to animate
+   - Include the auto-generated `frames.h` (which includes all frame headers and the frame array)
+   - Loop through the frames to animate
 
 ---
 
 ### 🧠 Tips
 
-* Each image must be exactly **96x64 pixels**
+* Each image/frame is automatically resized and cropped to **96x64 pixels**
 * Keep the number of frames reasonable (e.g., 10–30) to stay within memory limits
 * RGB332 is 1 byte per pixel (6144 bytes per frame)
+* For best color results, use high-contrast GIFs and preview your animation after conversion
 
 ---
 
@@ -56,7 +42,8 @@ Animate a GIF on your TinyScreen+ by converting it into frame-by-frame `.h` file
 
 * TinyScreen+ with TinyScreen OLED
 * Arduino IDE + TinyScreen library
-* Python 3 + `Pillow` library (`pip install pillow`)
+* **Board Selection:** In Arduino IDE, select **TinyZero** as the board (not TinyScreen+)
+* Python 3 + `Pillow` libraries (`pip install pillow`)
 
 ---
 
@@ -64,11 +51,11 @@ Animate a GIF on your TinyScreen+ by converting it into frame-by-frame `.h` file
 
 ```
 /TinyScreenProject
-  /images
-    frame_00_delay-0.1s.png
-    frame_01_delay-0.1s.png
-    ...
   png_to_rgb332_header.py
+  /image_frames
+    frame_00.png
+    frame_01.png
+    ...
   /main
     main.ino
     frame_00.h
@@ -77,3 +64,13 @@ Animate a GIF on your TinyScreen+ by converting it into frame-by-frame `.h` file
 ```
 
 ---
+
+### ⚡ Quick Start
+
+1. Place your GIF anywhere, then run:
+   ```bash
+   python png_to_rgb332_header.py your.gif
+   ```
+2. Open the `/main/main.ino` sketch in Arduino IDE.
+3. Select **TinyZero** as the board.
+4. Upload and enjoy your animation! (You might have to adjust the number of frames and frame delay in the sketch)
